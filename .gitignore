@@ -1,0 +1,4 @@
+pub/
+output.json
+secrets.txt
+debug_locally.sh

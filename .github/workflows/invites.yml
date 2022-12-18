@@ -1,0 +1,59 @@
+name: Invites
+
+permissions:
+  contents: write
+
+on:
+  repository_dispatch:
+    types: [new-invite]
+  workflow_dispatch:
+    inputs:
+      invite_url:
+        required: true
+      invite_valid_until:
+        required: true
+      invite_max_uses:
+        required: true
+      n_members:
+        default: "2003"
+      n_online:
+        default: "154"        
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Update site
+        env:
+          SERVER_NAME: "Berlin Social Club"
+          FULL_URL: "https://berlinsocialclub.github.io/invites/"
+          TWITTER_HANDLE: "@berlinsocialclub"
+          TITLE: "Berlin Social Club"
+          SUBTITLE: "Request your invite for"
+          BUTTON_TEXT: "Get Invite"
+        run: |
+          set -eux
+          if [[ ${{ github.event_name }} == "repository_dispatch" ]]; then
+            export NUM_MEMBERS="${{ github.event.client_payload.n_members }}"
+            export NUM_MEMBERS_ONLINE="${{ github.event.client_payload.n_online }}"
+            export INVITE_URL="${{ github.event.client_payload.invite_url }}"
+            export INVITE_VALID_UNTIL="${{ github.event.client_payload.invite_valid_until }}"
+            export INVITE_MAX_USES="${{ github.event.client_payload.invite_max_uses }}"
+          else
+            export NUM_MEMBERS="${{ inputs.n_members }}"
+            export NUM_MEMBERS_ONLINE="${{ inputs.n_online }}"
+            export INVITE_URL="${{ inputs.invite_url }}"
+            export INVITE_VALID_UNTIL="${{ inputs.invite_valid_until }}"
+            export INVITE_MAX_USES="${{ inputs.invite_max_uses }}"
+          fi
+          python scripts/render.py
+          echo "Done."
+      - name: Publish site
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: pub
